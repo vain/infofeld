@@ -90,7 +90,7 @@ def make_surface(args):
 
     history = get_history()
     history.append(stat_snapshot())
-    history = history[-100:]
+    history = history[-int(args.w / 2):]
     save_history(history)
     hist_tok = [[float(j) for j in i.split()] for i in history]
 

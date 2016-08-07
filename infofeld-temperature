@@ -46,7 +46,7 @@ def make_surface(args):
 
     history = get_history()
     history.append(stat_snapshot())
-    history = history[-100:]
+    history = history[-args.w:]
     save_history(history)
 
     max_temp = 0
