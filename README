@@ -1,0 +1,30 @@
+                                ========
+                                infofeld
+                                ========
+
+
+A set of short scripts to create system information graphics. The output
+format is farbfeld[0], so these scripts can be used in bevelbar[1].
+
+[0]: http://git.suckless.org/farbfeld/
+[1]: https://github.com/vain/bevelbar
+
+
+Installation
+------------
+
+Dependencies:
+
+    - Python 3 Cairo bindings (package python-cairo in Arch Linux)
+    - Linux procfs and sysfs
+    - farbfeld tools (png2ff)
+
+
+Running
+-------
+
+The individual scripts write a farbfeld image to stdout. What you do
+with that is up to you.
+
+bevelbar-infofeld can be used to create output that can be piped into
+bevelbar.

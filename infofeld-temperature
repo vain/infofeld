@@ -1,0 +1,104 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+from datetime import datetime
+from getpass import getuser
+from glob import glob
+from os import makedirs
+from subprocess import PIPE, Popen
+
+import cairo
+
+
+def get_history():
+    makedirs('/tmp/infofeld-{}'.format(getuser()), exist_ok=True)
+    try:
+        with open('/tmp/infofeld-{}/temperature.history'.format(getuser())) as fp:
+            return [l.strip() for l in fp.readlines()]
+    except FileNotFoundError:
+        return []
+
+
+def save_history(history):
+    with open('/tmp/infofeld-{}/temperature.history'.format(getuser()), 'w') as fp:
+        fp.write('\n'.join(history))
+
+
+def stat_snapshot():
+    for i in glob('/sys/class/thermal/thermal_zone*'):
+        with open(i + '/type') as fp:
+            if fp.read().strip() != 'x86_pkg_temp':
+                continue
+
+        with open(i + '/temp') as fp:
+            return fp.read().strip()
+
+    return '0'
+
+
+def make_surface(args):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
+    cr = cairo.Context(surface)
+
+    cr.rectangle(0, 0, args.w, args.h)
+    cr.set_source_rgb(*([float(f) for f in args.color_background.split(',')]))
+    cr.fill()
+
+    history = get_history()
+    history.append(stat_snapshot())
+    history = history[-100:]
+    save_history(history)
+
+    max_temp = 0
+    for i in history:
+        temp = int(i) / 1000
+        max_temp = max(temp, max_temp)
+
+    l = len(history)
+    if l >= 3:
+        # Temperature graphs.
+        cr.save()
+        cr.scale(args.w, args.h)
+        cr.move_to(0, 1)
+        for i, temp_str in enumerate(history):
+            temp = int(temp_str) / 1000 / (max_temp * 1.2)
+            cr.line_to((i - 1) / (l - 2), 1 - temp)
+        cr.line_to(1, 1)
+        cr.close_path()
+        cr.set_source_rgb(*([float(f) for f in args.color_temperature.split(',')]))
+        cr.fill()
+        cr.restore()
+
+        # Display current temperature as text.
+        cr.save()
+        cr.set_source_rgb(*([float(f) for f in args.color_font.split(',')]))
+        if not args.antialias_font:
+            fo = cairo.FontOptions()
+            fo.set_antialias(cairo.ANTIALIAS_NONE)
+            cr.set_font_options(fo)
+        cr.set_font_size(args.size_font)
+        cr.move_to(0, args.size_font)
+        cr.show_text(str(int(int(history[-1]) / 1000)))
+        cr.restore()
+
+    return surface
+
+
+def write_ff(surface):
+    p = Popen(['png2ff'], stdin=PIPE)
+    surface.write_to_png(p.stdin)
+    p.communicate()
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('w', type=int)
+    parser.add_argument('h', type=int)
+    parser.add_argument('--color-background', default='0,0,0.33')
+    parser.add_argument('--color-temperature', default='0.45,0.71,1')
+    parser.add_argument('--color-font', default='1,1,1')
+    parser.add_argument('--size-font', type=int, default=10)
+    parser.add_argument('--antialias-font', action='store_true')
+    args = parser.parse_args()
+
+    write_ff(make_surface(args))

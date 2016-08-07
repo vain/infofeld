@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+from datetime import datetime
+from math import acos, cos, sin, pi
+from subprocess import PIPE, Popen
+
+import cairo
+
+DEG_TO_RAD = pi / 180
+
+def sun_info(args):
+    sun = {}
+
+    now = datetime.now()
+    l = now.timetuple()
+
+    sun['current'] = l.tm_hour + (l.tm_min / 60) + (l.tm_sec / 3600)
+    sun['current'] /= 24
+
+    # Hacky and not precise, but good enough for this tool.
+    tzoff = (datetime.utcnow() - datetime.now()).total_seconds() / 60
+
+    # http://lexikon.astronomie.info/zeitgleichung/
+    # (No code from that site has been used, just the mathematical
+    # formulas.)
+
+    B = args.lat * DEG_TO_RAD
+    decl = 0.4095 * sin(0.016906 * (l.tm_yday - 80.086))
+
+    h_rise = -0.0145
+    diff = 12 * acos((sin(h_rise) - sin(B) * sin(decl)) /
+           (cos(B) * cos(decl))) / pi
+    ZGdiff = -0.171 * sin(0.0337 * l.tm_yday + 0.465) - (0.1299 *
+             sin(0.01787 * l.tm_yday - 0.168))
+
+    local_delta = tzoff / (-60) - (args.lon / 15)
+
+    WOZ = 12 - diff
+    MOZ = WOZ + ZGdiff
+    local_rise = MOZ + local_delta
+
+    local_set = local_rise + 2 * diff
+    local_noon = local_rise + diff
+
+    sun['rise'] = local_rise / 24
+    sun['noon'] = local_noon / 24
+    sun['set'] = local_set / 24
+
+    return sun
+
+
+def make_surface(args):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
+    cr = cairo.Context(surface)
+
+    sun = sun_info(args)
+
+    # We assume that "sensible" time zones are in effect. That is, night
+    # time does not begin after 0:00.
+
+    night = [float(f) for f in args.color_night.split(',')]
+    day = [float(f) for f in args.color_day.split(',')]
+
+    # Night and day with smooth transitions.
+    pat = cairo.LinearGradient(0, 0, args.w, 0)
+    pat.add_color_stop_rgb(0, *night)
+    pat.add_color_stop_rgb(sun['rise'] - 0.03, *night)
+    pat.add_color_stop_rgb(sun['rise'] + 0.03, *day)
+    pat.add_color_stop_rgb(sun['set'] - 0.03, *day)
+    pat.add_color_stop_rgb(sun['set'] + 0.03, *night)
+    pat.add_color_stop_rgb(1, *night)
+    cr.rectangle(0, 0, args.w, args.h)
+    cr.set_source(pat)
+    cr.fill()
+
+    # Grid.
+    cr.save()
+    cr.set_line_width(args.width_grid)
+    cr.set_dash([args.dash_grid], 0)
+    cr.set_source_rgb(*([float(f) for f in args.color_grid.split(',')]))
+    for i in range(args.interval_grid, 24, args.interval_grid):
+        cr.move_to(int(i / 24 * args.w) - 0.5, 0)
+        cr.line_to(int(i / 24 * args.w) - 0.5, args.h)
+        cr.stroke()
+    cr.restore()
+
+    # Indicators.
+    cr.set_line_width(args.width_noon)
+    cr.set_source_rgb(*([float(f) for f in args.color_noon.split(',')]))
+    cr.move_to(int(sun['noon'] * args.w) - 0.5, 0)
+    cr.line_to(int(sun['noon'] * args.w) - 0.5, args.h)
+    cr.stroke()
+
+    cr.set_line_width(args.width_now)
+    cr.set_source_rgb(*([float(f) for f in args.color_now.split(',')]))
+    cr.move_to(sun['current'] * args.w, 0)
+    cr.line_to(sun['current'] * args.w, args.h)
+    cr.stroke()
+
+    return surface
+
+
+def write_ff(surface):
+    p = Popen(['png2ff'], stdin=PIPE)
+    surface.write_to_png(p.stdin)
+    p.communicate()
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('w', type=int)
+    parser.add_argument('h', type=int)
+    parser.add_argument('--lat', type=float, default=50)
+    parser.add_argument('--lon', type=float, default=8)
+    parser.add_argument('--dash-grid', type=int, default=1)
+    parser.add_argument('--interval-grid', type=int, default=3)
+    parser.add_argument('--color-night', default='0,0,0.33')
+    parser.add_argument('--color-day', default='0.45,0.71,1')
+    parser.add_argument('--color-grid', default='0.3,0.3,0.3')
+    parser.add_argument('--color-noon', default='0.45,0.82,1')
+    parser.add_argument('--color-now', default='1,0,0')
+    parser.add_argument('--width-grid', type=float, default=1)
+    parser.add_argument('--width-noon', type=float, default=1)
+    parser.add_argument('--width-now', type=float, default=2)
+    args = parser.parse_args()
+
+    write_ff(make_surface(args))

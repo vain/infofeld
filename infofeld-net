@@ -1,0 +1,182 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+from datetime import datetime
+from getpass import getuser
+from glob import glob
+from os import makedirs
+from subprocess import PIPE, Popen
+
+import cairo
+
+
+def get_history():
+    makedirs('/tmp/infofeld-{}'.format(getuser()), exist_ok=True)
+    try:
+        with open('/tmp/infofeld-{}/net.history'.format(getuser())) as fp:
+            return [l.strip() for l in fp.readlines()]
+    except FileNotFoundError:
+        return []
+
+
+def save_history(history):
+    with open('/tmp/infofeld-{}/net.history'.format(getuser()), 'w') as fp:
+        fp.write('\n'.join(history))
+
+
+def stat_snapshot():
+    rx_bytes = 0
+    tx_bytes = 0
+
+    for i in glob('/sys/class/net/*'):
+        # 1 = ARPHRD_ETHER
+        # https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/include/uapi/linux/if_arp.h?id=refs/tags/v3.19.3#n67
+        with open(i + '/type') as fp:
+            if fp.read().strip() != '1':
+                continue
+
+        # First bit set = interface up
+        # https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/include/uapi/linux/if.h?id=refs/tags/v3.19.3#n71
+        with open(i + '/flags') as fp:
+            if not int(fp.read().strip(), 16) & 1:
+                continue
+
+        with open(i + '/statistics/rx_bytes') as fp:
+            rx_bytes += int(fp.read().strip())
+        with open(i + '/statistics/tx_bytes') as fp:
+            tx_bytes += int(fp.read().strip())
+
+    return '{} {} {}'.format(datetime.now().strftime('%s.%f'), rx_bytes, tx_bytes)
+
+
+def get_scaled_deltas(net_class, new, old):
+    s = new[0] - old[0]
+    rx_per_second = (new[1] - old[1]) / s
+    tx_per_second = (new[2] - old[2]) / s
+    return rx_per_second / (net_class['down'] / 8 * 1e6), \
+           tx_per_second / (net_class['up'] / 8 * 1e6)
+
+
+def get_net_class(history):
+    rx_max = tx_max = 0
+    for i in range(1, len(history)):
+        s = history[i][0] - history[i - 1][0]
+        rx_per_second = (history[i][1] - history[i - 1][1]) / s
+        tx_per_second = (history[i][2] - history[i - 1][2]) / s
+        rx_max = max(rx_per_second, rx_max)
+        tx_max = max(tx_per_second, tx_max)
+
+    nc_down = nc_up = 1
+    while nc_down < rx_max * 8:
+        nc_down *= 10
+    while nc_up < tx_max * 8:
+        nc_up *= 10
+
+    # MBit, but minimum is 1 MBit
+    nc_down /= 1e6
+    nc_up /= 1e6
+    nc_down = max(nc_down, 1)
+    nc_up = max(nc_up, 1)
+
+    return { 'down': nc_down, 'up': nc_up }
+
+
+def make_surface(args):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
+    cr = cairo.Context(surface)
+
+    cr.rectangle(0, 0, args.w, args.h)
+    cr.set_source_rgb(*([float(f) for f in args.color_background.split(',')]))
+    cr.fill()
+
+    history = get_history()
+    history.append(stat_snapshot())
+    history = history[-100:]
+    save_history(history)
+    hist_tok = [[float(j) for j in i.split()] for i in history]
+
+    l = len(history)
+    if l >= 3:
+        # Scaling is a problem. Do you have a 1 MBit line? Or 10 GBit?
+        # What if you're on 10 GBit and 2 MBit of traffic is constantly
+        # going over the line -- you want to see that!
+        #
+        # The following function tries to autodetect your bandwidth
+        # based on the traffic we've seen so far. This means that it'll
+        # show as "1 MBit" if there's little traffic, but it can go a
+        # lot higher if there's more traffic.
+        net_class = get_net_class(hist_tok)
+
+        # rx_bytes
+        cr.save()
+        cr.scale(0.5 * args.w, args.h)
+        cr.move_to(0, 1)
+        for i in range(1, l):
+            rx, tx = get_scaled_deltas(net_class, hist_tok[i], hist_tok[i - 1])
+            cr.line_to((i - 1) / (l - 2), 1 - rx)
+        cr.line_to(1, 1)
+        cr.close_path()
+        cr.set_source_rgb(*([float(f) for f in args.color_down.split(',')]))
+        cr.fill()
+        cr.restore()
+
+        # tx_bytes
+        cr.save()
+        cr.scale(0.5 * args.w, args.h)
+        cr.translate(1, 0)
+        cr.move_to(0, 1)
+        for i in range(1, l):
+            rx, tx = get_scaled_deltas(net_class, hist_tok[i], hist_tok[i - 1])
+            cr.line_to((i - 1) / (l - 2), 1 - tx)
+        cr.line_to(1, 1)
+        cr.close_path()
+        cr.set_source_rgb(*([float(f) for f in args.color_up.split(',')]))
+        cr.fill()
+        cr.restore()
+
+        # Display net classes.
+        cr.save()
+        cr.set_source_rgb(*([float(f) for f in args.color_font.split(',')]))
+        if not args.antialias_font:
+            fo = cairo.FontOptions()
+            fo.set_antialias(cairo.ANTIALIAS_NONE)
+            cr.set_font_options(fo)
+        cr.set_font_size(args.size_font)
+        cr.move_to(0, args.size_font)
+        cr.show_text(str(int(net_class['down'])))
+        cr.move_to(0.5 * args.w, args.size_font)
+        cr.show_text(str(int(net_class['up'])))
+        cr.restore()
+
+    cr.set_line_width(args.width_grid)
+    cr.set_dash([args.dash_grid], 0)
+    cr.set_source_rgb(*([float(f) for f in args.color_grid.split(',')]))
+    cr.move_to(0.5 * args.w - 0.5, 0)
+    cr.line_to(0.5 * args.w - 0.5, args.h)
+    cr.stroke()
+
+    return surface
+
+
+def write_ff(surface):
+    p = Popen(['png2ff'], stdin=PIPE)
+    surface.write_to_png(p.stdin)
+    p.communicate()
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('w', type=int)
+    parser.add_argument('h', type=int)
+    parser.add_argument('--color-background', default='0,0,0.33')
+    parser.add_argument('--color-down', default='0.45,0.71,1')
+    parser.add_argument('--color-up', default='1,0.73,0.45')
+    parser.add_argument('--color-font', default='1,1,1')
+    parser.add_argument('--color-grid', default='0.3,0.3,0.3')
+    parser.add_argument('--dash-grid', type=int, default=1)
+    parser.add_argument('--width-grid', type=float, default=1)
+    parser.add_argument('--size-font', type=int, default=10)
+    parser.add_argument('--antialias-font', action='store_true')
+    args = parser.parse_args()
+
+    write_ff(make_surface(args))

@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+from subprocess import PIPE, Popen
+
+import cairo
+
+
+def make_surface(args):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
+    cr = cairo.Context(surface)
+
+    cr.rectangle(0, 0, args.w, args.h)
+    cr.set_source_rgb(*([float(f) for f in args.color_free.split(',')]))
+    cr.fill()
+
+    with open('/proc/meminfo') as fp:
+        lines = [l.strip() for l in fp.readlines()]
+
+    for i in lines:
+        tokens = i.split()
+        if tokens[0] == 'MemTotal:':
+            total = int(tokens[1])
+        elif tokens[0] == 'MemAvailable:':
+            avail = int(tokens[1])
+
+    cr.rectangle(0, 0, int((total - avail) / total * args.w), args.h)
+    cr.set_source_rgb(*([float(f) for f in args.color_used.split(',')]))
+    cr.fill()
+
+    return surface
+
+
+def write_ff(surface):
+    p = Popen(['png2ff'], stdin=PIPE)
+    surface.write_to_png(p.stdin)
+    p.communicate()
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('w', type=int)
+    parser.add_argument('h', type=int)
+    parser.add_argument('--color-used', default='0.45,0.71,1')
+    parser.add_argument('--color-free', default='0,0,0.33')
+    args = parser.parse_args()
+
+    write_ff(make_surface(args))

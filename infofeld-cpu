@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+from getpass import getuser
+from os import makedirs
+from subprocess import PIPE, Popen
+
+import cairo
+
+
+def get_history():
+    makedirs('/tmp/infofeld-{}'.format(getuser()), exist_ok=True)
+    try:
+        with open('/tmp/infofeld-{}/cpu.history'.format(getuser())) as fp:
+            return [l.strip() for l in fp.readlines()]
+    except FileNotFoundError:
+        return []
+
+
+def save_history(history):
+    with open('/tmp/infofeld-{}/cpu.history'.format(getuser()), 'w') as fp:
+        fp.write('\n'.join(history))
+
+
+def stat_snapshot():
+    with open('/proc/stat') as fp:
+        return fp.readline().strip()
+
+
+def get_usage(new, old):
+    new_tokens = new.split()
+    old_tokens = old.split()
+
+    # Sum of user, nice, system, irc, softirq.
+    new_active = old_active = 0
+    for i in 1, 2, 3, 6, 7:
+        new_active += int(new_tokens[i])
+        old_active += int(old_tokens[i])
+
+    # Add remaining fields idle and iowait.
+    new_total = new_active
+    old_total = old_active
+    for i in 4, 5:
+        new_total += int(new_tokens[i])
+        old_total += int(old_tokens[i])
+
+    return (new_active - old_active) / (new_total - old_total)
+
+
+def make_surface(args):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
+    cr = cairo.Context(surface)
+
+    cr.rectangle(0, 0, args.w, args.h)
+    cr.set_source_rgb(*([float(f) for f in args.color_free.split(',')]))
+    cr.fill()
+
+    history = get_history()
+    history.append(stat_snapshot())
+    history = history[-100:]
+    save_history(history)
+
+    l = len(history)
+    if l >= 3:
+        cr.move_to(0, args.h)
+        for i in range(1, l):
+            val = get_usage(history[i], history[i - 1])
+            cr.line_to((i - 1) / (l - 2) * args.w, (1 - val) * args.h)
+        cr.line_to(args.w, args.h)
+        cr.close_path()
+
+        cr.set_source_rgb(*([float(f) for f in args.color_used.split(',')]))
+        cr.fill()
+
+    return surface
+
+
+def write_ff(surface):
+    p = Popen(['png2ff'], stdin=PIPE)
+    surface.write_to_png(p.stdin)
+    p.communicate()
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('w', type=int)
+    parser.add_argument('h', type=int)
+    parser.add_argument('--color-used', default='0.45,0.71,1')
+    parser.add_argument('--color-free', default='0,0,0.33')
+    args = parser.parse_args()
+
+    write_ff(make_surface(args))
