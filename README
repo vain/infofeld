@@ -26,5 +26,7 @@ Running
 The individual scripts write a farbfeld image to stdout. What you do
 with that is up to you.
 
-bevelbar-infofeld can be used to create output that can be piped into
-bevelbar.
+For a real life example, see:
+
+    https://github.com/vain/bin-pub/blob/master/katriawm-launch
+    https://github.com/vain/bin-pub/blob/master/bevelbar-infofeld
