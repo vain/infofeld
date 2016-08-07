@@ -66,17 +66,16 @@ def get_net_class(history):
         rx_max = max(rx_per_second, rx_max)
         tx_max = max(tx_per_second, tx_max)
 
-    nc_down = nc_up = 1
-    while nc_down < rx_max * 8:
-        nc_down *= 10
-    while nc_up < tx_max * 8:
-        nc_up *= 10
+    # Find net class in steps of 10 Mbit, but 1 MBit is the minimum.
+    if rx_max * 8 < 1e6:
+        nc_down = 1
+    else:
+        nc_down = ((rx_max * 8 // 10e6) + 1) * 10
 
-    # MBit, but minimum is 1 MBit
-    nc_down /= 1e6
-    nc_up /= 1e6
-    nc_down = max(nc_down, 1)
-    nc_up = max(nc_up, 1)
+    if tx_max * 8 < 1e6:
+        nc_up = 1
+    else:
+        nc_up = ((tx_max * 8 // 10e6) + 1) * 10
 
     return { 'down': nc_down, 'up': nc_up }
 
