@@ -1,0 +1,95 @@
+#!/usr/bin/env python
+
+from argparse import ArgumentParser
+from getpass import getuser
+from multiprocessing import cpu_count
+from os import makedirs
+from subprocess import PIPE, Popen
+
+import cairo
+
+
+def get_history():
+    makedirs('/tmp/infofeld-{}'.format(getuser()), exist_ok=True)
+    try:
+        with open('/tmp/infofeld-{}/load.history'.format(getuser())) as fp:
+            return [l.strip() for l in fp.readlines()]
+    except FileNotFoundError:
+        return []
+
+
+def save_history(history):
+    with open('/tmp/infofeld-{}/load.history'.format(getuser()), 'w') as fp:
+        fp.write('\n'.join(history))
+
+
+def stat_snapshot():
+    with open('/proc/loadavg') as fp:
+        return fp.readline().strip()
+
+
+def make_surface(args):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
+    cr = cairo.Context(surface)
+
+    cr.rectangle(0, 0, args.w, args.h)
+    cr.set_source_rgb(*([float(f) for f in args.color_free.split(',')]))
+    cr.fill()
+
+    history = get_history()
+    history.append(stat_snapshot())
+    history = history[-args.w:]
+    save_history(history)
+    hist_tok = [i.split() for i in history]
+
+    load_max = 0
+    for i in hist_tok:
+        l = float(i[0])
+        load_max = max(l, load_max)
+    load_max = max(cpu_count(), load_max)
+
+    l = len(history)
+    if l >= 2:
+        cr.move_to(0, args.h)
+        for i, v in enumerate(hist_tok):
+            val = float(v[0]) / load_max
+            cr.line_to(i / (l - 1) * args.w, (1 - val) * args.h)
+        cr.line_to(args.w, args.h)
+        cr.close_path()
+
+        if load_max > cpu_count():
+            cr.set_source_rgb(*([float(f) for f in args.color_overused.split(',')]))
+        else:
+            cr.set_source_rgb(*([float(f) for f in args.color_used.split(',')]))
+        cr.fill()
+
+        if load_max > cpu_count():
+            cr.set_line_width(args.width_grid)
+            cr.set_dash([args.dash_grid], 0)
+            cr.set_source_rgb(*([float(f) for f in args.color_grid.split(',')]))
+            cr.move_to(0, (1 - cpu_count() / load_max) * args.h)
+            cr.line_to(args.w, (1 - cpu_count() / load_max) * args.h)
+            cr.stroke()
+
+    return surface
+
+
+def write_ff(surface):
+    p = Popen(['png2ff'], stdin=PIPE)
+    surface.write_to_png(p.stdin)
+    p.communicate()
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('w', type=int)
+    parser.add_argument('h', type=int)
+    parser.add_argument('--color-used', default='0.45,0.71,1')
+    parser.add_argument('--color-free', default='0,0,0.33')
+    parser.add_argument('--color-overused', default='1,0.4,0.3')
+    parser.add_argument('--color-grid', default='1,0.4,0.3')
+    parser.add_argument('--dash-grid', type=int, default=1)
+    parser.add_argument('--width-grid', type=float, default=1)
+    args = parser.parse_args()
+
+    write_ff(make_surface(args))
