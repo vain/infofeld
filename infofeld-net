@@ -99,7 +99,7 @@ def make_surface(args):
 
     history = get_history()
     history.append(stat_snapshot())
-    history = history[-int(args.w / 2):]
+    history = history[-int(args.w / 2 * args.history_scale):]
     save_history(history)
     hist_tok = [[float(j) for j in i.split()] for i in history]
 
@@ -176,6 +176,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('w', type=int)
     parser.add_argument('h', type=int)
+    parser.add_argument('--history-scale', type=int, default=1)
     parser.add_argument('--color-background', default='0,0,0.33')
     parser.add_argument('--color-down', default='0.45,0.71,1')
     parser.add_argument('--color-up', default='1,0.73,0.45')
