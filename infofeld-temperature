@@ -55,14 +55,14 @@ def make_surface(args):
         max_temp = max(temp, max_temp)
 
     l = len(history)
-    if l >= 3:
+    if l >= 2:
         # Temperature graphs.
         cr.save()
         cr.scale(args.w, args.h)
         cr.move_to(0, 1)
         for i, temp_str in enumerate(history):
             temp = int(temp_str) / 1000 / (max_temp * 1.2)
-            cr.line_to((i - 1) / (l - 2), 1 - temp)
+            cr.line_to(i / (l - 1), 1 - temp)
         cr.line_to(1, 1)
         cr.close_path()
         cr.set_source_rgb(*[float(f) for f in args.color_temperature.split(',')])
