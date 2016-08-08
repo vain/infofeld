@@ -21,7 +21,7 @@ def get_history():
 
 def save_history(history):
     with open('/tmp/infofeld-{}/net.history'.format(getuser()), 'w') as fp:
-        fp.write('\n'.join(history))
+        fp.write('\n'.join(history) + '\n')
 
 
 def stat_snapshot():
