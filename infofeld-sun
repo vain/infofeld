@@ -78,7 +78,7 @@ def make_surface(args):
     cr.save()
     cr.set_line_width(args.width_grid)
     cr.set_dash([args.dash_grid], 0)
-    cr.set_source_rgb(*([float(f) for f in args.color_grid.split(',')]))
+    cr.set_source_rgb(*[float(f) for f in args.color_grid.split(',')])
     for i in range(args.interval_grid, 24, args.interval_grid):
         cr.move_to(int(i / 24 * args.w) - 0.5, 0)
         cr.line_to(int(i / 24 * args.w) - 0.5, args.h)
@@ -87,13 +87,13 @@ def make_surface(args):
 
     # Indicators.
     cr.set_line_width(args.width_noon)
-    cr.set_source_rgb(*([float(f) for f in args.color_noon.split(',')]))
+    cr.set_source_rgb(*[float(f) for f in args.color_noon.split(',')])
     cr.move_to(int(sun['noon'] * args.w) - 0.5, 0)
     cr.line_to(int(sun['noon'] * args.w) - 0.5, args.h)
     cr.stroke()
 
     cr.set_line_width(args.width_now)
-    cr.set_source_rgb(*([float(f) for f in args.color_now.split(',')]))
+    cr.set_source_rgb(*[float(f) for f in args.color_now.split(',')])
     cr.move_to(sun['current'] * args.w, 0)
     cr.line_to(sun['current'] * args.w, args.h)
     cr.stroke()

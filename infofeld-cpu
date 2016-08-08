@@ -52,7 +52,7 @@ def make_surface(args):
     cr = cairo.Context(surface)
 
     cr.rectangle(0, 0, args.w, args.h)
-    cr.set_source_rgb(*([float(f) for f in args.color_free.split(',')]))
+    cr.set_source_rgb(*[float(f) for f in args.color_free.split(',')])
     cr.fill()
 
     history = get_history()
@@ -69,7 +69,7 @@ def make_surface(args):
         cr.line_to(args.w, args.h)
         cr.close_path()
 
-        cr.set_source_rgb(*([float(f) for f in args.color_used.split(',')]))
+        cr.set_source_rgb(*[float(f) for f in args.color_used.split(',')])
         cr.fill()
 
     return surface

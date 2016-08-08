@@ -41,7 +41,7 @@ def make_surface(args):
     cr = cairo.Context(surface)
 
     cr.rectangle(0, 0, args.w, args.h)
-    cr.set_source_rgb(*([float(f) for f in args.color_background.split(',')]))
+    cr.set_source_rgb(*[float(f) for f in args.color_background.split(',')])
     cr.fill()
 
     history = get_history()
@@ -65,13 +65,13 @@ def make_surface(args):
             cr.line_to((i - 1) / (l - 2), 1 - temp)
         cr.line_to(1, 1)
         cr.close_path()
-        cr.set_source_rgb(*([float(f) for f in args.color_temperature.split(',')]))
+        cr.set_source_rgb(*[float(f) for f in args.color_temperature.split(',')])
         cr.fill()
         cr.restore()
 
         # Display current temperature as text.
         cr.save()
-        cr.set_source_rgb(*([float(f) for f in args.color_font.split(',')]))
+        cr.set_source_rgb(*[float(f) for f in args.color_font.split(',')])
         if not args.antialias_font:
             fo = cairo.FontOptions()
             fo.set_antialias(cairo.ANTIALIAS_NONE)

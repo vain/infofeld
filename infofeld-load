@@ -33,7 +33,7 @@ def make_surface(args):
     cr = cairo.Context(surface)
 
     cr.rectangle(0, 0, args.w, args.h)
-    cr.set_source_rgb(*([float(f) for f in args.color_free.split(',')]))
+    cr.set_source_rgb(*[float(f) for f in args.color_free.split(',')])
     cr.fill()
 
     history = get_history()
@@ -58,15 +58,15 @@ def make_surface(args):
         cr.close_path()
 
         if load_max > cpu_count():
-            cr.set_source_rgb(*([float(f) for f in args.color_overused.split(',')]))
+            cr.set_source_rgb(*[float(f) for f in args.color_overused.split(',')])
         else:
-            cr.set_source_rgb(*([float(f) for f in args.color_used.split(',')]))
+            cr.set_source_rgb(*[float(f) for f in args.color_used.split(',')])
         cr.fill()
 
         if load_max > cpu_count():
             cr.set_line_width(args.width_grid)
             cr.set_dash([args.dash_grid], 0)
-            cr.set_source_rgb(*([float(f) for f in args.color_grid.split(',')]))
+            cr.set_source_rgb(*[float(f) for f in args.color_grid.split(',')])
             cr.move_to(0, (1 - cpu_count() / load_max) * args.h)
             cr.line_to(args.w, (1 - cpu_count() / load_max) * args.h)
             cr.stroke()
