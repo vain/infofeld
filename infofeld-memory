@@ -24,8 +24,12 @@ def make_surface(args):
         elif tokens[0] == 'MemAvailable:':
             avail = int(tokens[1])
 
+    pat = cairo.LinearGradient(0, 0, args.w, 0)
+    pat.add_color_stop_rgb(0, *[float(f) for f in args.color_used_begin.split(',')])
+    pat.add_color_stop_rgb(1, *[float(f) for f in args.color_used_end.split(',')])
+    cr.set_source(pat)
+
     cr.rectangle(0, 0, int((total - avail) / total * args.w), args.h)
-    cr.set_source_rgb(*([float(f) for f in args.color_used.split(',')]))
     cr.fill()
 
     return surface
@@ -41,7 +45,8 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('w', type=int)
     parser.add_argument('h', type=int)
-    parser.add_argument('--color-used', default='0.45,0.71,1')
+    parser.add_argument('--color-used-begin', default='0.45,0.71,1')
+    parser.add_argument('--color-used-end', default='1,0.4,0.3')
     parser.add_argument('--color-free', default='0,0,0.33')
     args = parser.parse_args()
 
