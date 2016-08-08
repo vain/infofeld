@@ -81,8 +81,8 @@ def get_net_class(history):
         nc_up = 1
     elif tx_max * 8 < 2e6:
         nc_up = 2
-    elif tx_up * 8 < 6e6:
-        nc_down = 6
+    elif tx_max * 8 < 6e6:
+        nc_up = 6
     else:
         nc_up = ((tx_max * 8 // 10e6) + 1) * 10
 
