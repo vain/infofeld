@@ -36,6 +36,14 @@ def stat_snapshot():
     return '0'
 
 
+def shadowed_text(cr, args, string):
+    cr.text_path(string)
+    cr.set_source_rgb(*[float(f) for f in args.color_font_shadow.split(',')])
+    cr.stroke_preserve()
+    cr.set_source_rgb(*[float(f) for f in args.color_font.split(',')])
+    cr.fill()
+
+
 def make_surface(args):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
     cr = cairo.Context(surface)
@@ -77,8 +85,8 @@ def make_surface(args):
             fo.set_antialias(cairo.ANTIALIAS_NONE)
             cr.set_font_options(fo)
         cr.set_font_size(args.size_font)
-        cr.move_to(0, args.size_font)
-        cr.show_text(str(int(int(history[-1]) / 1000)))
+        cr.move_to(1, args.size_font)
+        shadowed_text(cr, args, str(int(int(history[-1]) / 1000)))
         cr.restore()
 
     return surface
@@ -98,7 +106,8 @@ if __name__ == '__main__':
     parser.add_argument('--color-background', default='0,0,0.33')
     parser.add_argument('--color-temperature', default='0.45,0.71,1')
     parser.add_argument('--color-font', default='1,1,1')
-    parser.add_argument('--size-font', type=int, default=10)
+    parser.add_argument('--color-font-shadow', default='0,0,0')
+    parser.add_argument('--size-font', type=int, default=8)
     parser.add_argument('--antialias-font', action='store_true')
     args = parser.parse_args()
 
