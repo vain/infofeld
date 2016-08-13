@@ -53,8 +53,32 @@ def get_scaled_deltas(net_class, new, old):
     s = new[0] - old[0]
     rx_per_second = (new[1] - old[1]) / s
     tx_per_second = (new[2] - old[2]) / s
-    return rx_per_second / (net_class['down'] / 8 * 1e6), \
-           tx_per_second / (net_class['up'] / 8 * 1e6)
+    return rx_per_second / (net_class['down']['scale'] / 8 * 1e6), \
+           tx_per_second / (net_class['up']['scale'] / 8 * 1e6)
+
+
+def get_net_class_single(speed):
+    scale = None
+
+    # Low speed steps.
+    for i in (8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 6114):
+        if speed * 8 < i * 1000:
+            scale = i / 1000
+            break
+
+    # If speed is higher, then we'll scale in steps of 10 MBit.
+    if scale is None:
+        scale = ((speed * 8 // 10e6) + 1) * 10
+
+    if scale < 1:
+        label = '{:.0f} K'.format(scale * 1000)
+    else:
+        label = '{:.0f} M'.format(scale)
+
+    return {
+        'label': label,
+        'scale': scale,
+    }
 
 
 def get_net_class(history):
@@ -66,27 +90,10 @@ def get_net_class(history):
         rx_max = max(rx_per_second, rx_max)
         tx_max = max(tx_per_second, tx_max)
 
-    # Find net class in steps of 10 Mbit, but 1 MBit is the minimum.
-    # After that, do a few additional steps below 10 MBit.
-    if rx_max * 8 < 1e6:
-        nc_down = 1
-    elif rx_max * 8 < 2e6:
-        nc_down = 2
-    elif rx_max * 8 < 6e6:
-        nc_down = 6
-    else:
-        nc_down = ((rx_max * 8 // 10e6) + 1) * 10
-
-    if tx_max * 8 < 1e6:
-        nc_up = 1
-    elif tx_max * 8 < 2e6:
-        nc_up = 2
-    elif tx_max * 8 < 6e6:
-        nc_up = 6
-    else:
-        nc_up = ((tx_max * 8 // 10e6) + 1) * 10
-
-    return { 'down': nc_down, 'up': nc_up }
+    return {
+        'down': get_net_class_single(rx_max),
+        'up': get_net_class_single(tx_max),
+    }
 
 
 def make_surface(args):
@@ -111,8 +118,8 @@ def make_surface(args):
         #
         # The following function tries to autodetect your bandwidth
         # based on the traffic we've seen so far. This means that it'll
-        # show as "1 MBit" if there's little traffic, but it can go a
-        # lot higher if there's more traffic.
+        # show as, say, "1 MBit" if there's little traffic, but it can
+        # go a lot higher if there's more traffic.
         net_class = get_net_class(hist_tok)
 
         # rx_bytes
@@ -151,9 +158,9 @@ def make_surface(args):
             cr.set_font_options(fo)
         cr.set_font_size(args.size_font)
         cr.move_to(0, args.size_font)
-        cr.show_text(str(int(net_class['down'])))
+        cr.show_text(net_class['down']['label'])
         cr.move_to(0.5 * args.w, args.size_font)
-        cr.show_text(str(int(net_class['up'])))
+        cr.show_text(net_class['up']['label'])
         cr.restore()
 
     cr.set_line_width(args.width_grid)
