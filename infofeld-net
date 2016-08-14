@@ -151,12 +151,12 @@ def make_surface(args):
         cr.restore()
 
         # Display net classes.
-        cr.save()
-        cr.move_to(1, args.size_font)
-        shadowed_text(cr, args, net_class['down']['label'])
-        cr.move_to(1 + 0.5 * args.w, args.size_font)
-        shadowed_text(cr, args, net_class['up']['label'])
-        cr.restore()
+        shadowed_text(cr, args,
+                      1, args.size_font,
+                      net_class['down']['label'])
+        shadowed_text(cr, args,
+                      1 + 0.5 * args.w, args.size_font,
+                      net_class['up']['label'])
 
     cr.set_line_width(args.width_grid)
     cr.set_dash([args.dash_grid], 0)

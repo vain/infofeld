@@ -71,10 +71,9 @@ def make_surface(args):
         cr.restore()
 
         # Display current temperature as text.
-        cr.save()
-        cr.move_to(1, args.size_font)
-        shadowed_text(cr, args, str(int(int(history[-1]) / 1000)))
-        cr.restore()
+        shadowed_text(cr, args,
+                      1, args.size_font,
+                      str(int(int(history[-1]) / 1000)))
 
     return surface
 
