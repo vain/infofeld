@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from infofeldlib import write_ff
+from infofeldlib import shadowed_text, write_ff
 
 from argparse import ArgumentParser
 from datetime import datetime
@@ -53,6 +53,12 @@ def sun_info(args):
     return sun
 
 
+def float_to_time(f):
+    f *= 24
+    h = int(f)
+    return '{}:{:02d}'.format(h, int((f - h) * 60))
+
+
 def make_surface(args):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
     cr = cairo.Context(surface)
@@ -101,6 +107,22 @@ def make_surface(args):
     cr.line_to(sun['current'] * args.w, args.h)
     cr.stroke()
 
+    # Text labels.
+    # Note that these times are not 100% correct due to the simple
+    # calculations we do above. They should be about +/- 10 minutes
+    # accurate, though. This is more than good enough if you only want
+    # to get an idea of "when it'll get dark outside".
+    l = float_to_time(sun['rise'])
+    shadowed_text(cr, args,
+                  int(sun['rise'] * args.w) + 1, args.size_font,
+                  l)
+
+    l = float_to_time(sun['set'])
+    _, _, tw, _, _, _ = cr.text_extents(l)
+    shadowed_text(cr, args,
+                  int(sun['set'] * args.w - tw), args.h - 2,
+                  l)
+
     return surface
 
 
@@ -108,7 +130,10 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('w', type=int)
     parser.add_argument('h', type=int)
+    parser.add_argument('--antialias-font', action='store_true')
     parser.add_argument('--color-day', default='0.45,0.71,1')
+    parser.add_argument('--color-font', default='1,1,1')
+    parser.add_argument('--color-font-shadow', default='0,0,0')
     parser.add_argument('--color-grid', default='0.3,0.3,0.3')
     parser.add_argument('--color-night', default='0,0,0.33')
     parser.add_argument('--color-noon', default='0.45,0.82,1')
@@ -117,6 +142,7 @@ if __name__ == '__main__':
     parser.add_argument('--interval-grid', type=int, default=3)
     parser.add_argument('--lat', type=float, default=50)
     parser.add_argument('--lon', type=float, default=8)
+    parser.add_argument('--size-font', type=int, default=8)
     parser.add_argument('--width-grid', type=float, default=1)
     parser.add_argument('--width-noon', type=float, default=1)
     parser.add_argument('--width-now', type=float, default=2)
