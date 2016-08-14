@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+from infofeldlib import write_ff
+
 from argparse import ArgumentParser
 from getpass import getuser
 from multiprocessing import cpu_count
 from os import makedirs
-from subprocess import PIPE, Popen
 
 import cairo
 
@@ -72,12 +73,6 @@ def make_surface(args):
             cr.stroke()
 
     return surface
-
-
-def write_ff(surface):
-    p = Popen(['png2ff'], stdin=PIPE)
-    surface.write_to_png(p.stdin)
-    p.communicate()
 
 
 if __name__ == '__main__':
