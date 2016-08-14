@@ -40,6 +40,14 @@ def shadowed_text(cr, args, x, y, string):
 
 
 def write_ff(surface):
+    # "surface" knows a method "get_data()", but it's not yet available
+    # as a Python 3 binding. So, we can't simply read the image buffer
+    # and turn it into a farbfeld image.
+    #
+    # As a workaround, we create a PNG file and pipe it into "png2ff".
+    # This requires the farbfeld conversion tools to be available on
+    # your system and it causes an extra "PNG round-trip". It's pretty
+    # fast, though, since our images are usually very small.
     p = Popen(['png2ff'], stdin=PIPE)
     surface.write_to_png(p.stdin)
     p.communicate()
