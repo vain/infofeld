@@ -1,6 +1,22 @@
+from getpass import getuser
+from os import makedirs
 from subprocess import PIPE, Popen
 
 import cairo
+
+
+def get_history(widget):
+    makedirs('/tmp/infofeld-{}'.format(getuser()), exist_ok=True)
+    try:
+        with open('/tmp/infofeld-{}/{}.history'.format(getuser(), widget)) as fp:
+            return [l.strip() for l in fp.readlines()]
+    except FileNotFoundError:
+        return []
+
+
+def save_history(widget, history):
+    with open('/tmp/infofeld-{}/{}.history'.format(getuser(), widget), 'w') as fp:
+        fp.write('\n'.join(history) + '\n')
 
 
 def shadowed_text(cr, args, x, y, string):
