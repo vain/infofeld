@@ -152,11 +152,6 @@ def make_surface(args):
 
         # Display net classes.
         cr.save()
-        if not args.antialias_font:
-            fo = cairo.FontOptions()
-            fo.set_antialias(cairo.ANTIALIAS_NONE)
-            cr.set_font_options(fo)
-        cr.set_font_size(args.size_font)
         cr.move_to(1, args.size_font)
         shadowed_text(cr, args, net_class['down']['label'])
         cr.move_to(1 + 0.5 * args.w, args.size_font)

@@ -72,12 +72,6 @@ def make_surface(args):
 
         # Display current temperature as text.
         cr.save()
-        cr.set_source_rgb(*[float(f) for f in args.color_font.split(',')])
-        if not args.antialias_font:
-            fo = cairo.FontOptions()
-            fo.set_antialias(cairo.ANTIALIAS_NONE)
-            cr.set_font_options(fo)
-        cr.set_font_size(args.size_font)
         cr.move_to(1, args.size_font)
         shadowed_text(cr, args, str(int(int(history[-1]) / 1000)))
         cr.restore()
