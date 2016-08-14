@@ -8,7 +8,9 @@ from math import acos, cos, sin, pi
 
 import cairo
 
+
 DEG_TO_RAD = pi / 180
+
 
 def sun_info(args):
     sun = {}
