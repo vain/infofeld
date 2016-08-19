@@ -33,10 +33,14 @@ def make_surface(args):
     history = history[-(args.w * args.history_scale):]
     save_history('temperature', history)
 
+    offset = args.base_temperature * 1000
+
+    # Find maximum temperature (upper end of the graph) and make sure
+    # that "offset" is not lower than the minimum temperature.
     max_temp = 0
     for i in history:
-        temp = int(i) / 1000
-        max_temp = max(temp, max_temp)
+        max_temp = max(int(i), max_temp)
+        offset = min(int(i), offset)
 
     l = len(history)
     if l >= 2:
@@ -45,7 +49,7 @@ def make_surface(args):
         cr.scale(args.w, args.h)
         cr.move_to(0, 1)
         for i, temp_str in enumerate(history):
-            temp = int(temp_str) / 1000 / (max_temp * 1.2)
+            temp = (int(temp_str) - offset) / (max_temp - offset) * 1.2
             cr.line_to(i / (l - 1), 1 - temp)
         cr.line_to(1, 1)
         cr.close_path()
@@ -71,6 +75,7 @@ if __name__ == '__main__':
     parser.add_argument('--color-font-shadow', default='0,0,0')
     parser.add_argument('--color-temperature', default='0.45,0.71,1')
     parser.add_argument('--history-scale', type=int, default=1)
+    parser.add_argument('--base-temperature', type=int, default=0)
     parser.add_argument('--size-font', type=int, default=8)
     args = parser.parse_args()
 
