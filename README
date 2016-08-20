@@ -19,6 +19,11 @@ Dependencies:
     - Linux procfs and sysfs
     - farbfeld tools (png2ff)
 
+Clone this repo and make it available in your $PATH. You will most
+likely not call any of these scripts interactively but from a wrapper
+script. Thus, it's sufficient to change $PATH only inside of that
+wrapper. See below.
+
 
 Running
 -------
