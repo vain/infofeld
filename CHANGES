@@ -1,0 +1,11 @@
+Release history for infofeld
+
+v16.08  2016-08-20
+  - Initial release.
+  - Scripts included:
+    - cpu
+    - load
+    - memory
+    - net
+    - sun
+    - temperature
