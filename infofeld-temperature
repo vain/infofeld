@@ -44,12 +44,14 @@ def make_surface(args):
 
     l = len(history)
     if l >= 2:
+        f = args.extra_margin_factor
+
         # Temperature graphs.
         cr.save()
         cr.scale(args.w, args.h)
         cr.move_to(0, 1)
         for i, temp_str in enumerate(history):
-            temp = (int(temp_str) - offset) / ((max_temp - offset) * 1.2)
+            temp = (int(temp_str) - offset) / ((max_temp - offset) * f)
             cr.line_to(i / (l - 1), 1 - temp)
         cr.line_to(1, 1)
         cr.close_path()
@@ -70,12 +72,13 @@ if __name__ == '__main__':
     parser.add_argument('w', type=int)
     parser.add_argument('h', type=int)
     parser.add_argument('--antialias-font', action='store_true')
+    parser.add_argument('--base-temperature', type=int, default=0)
     parser.add_argument('--color-background', default='0,0,0.33')
     parser.add_argument('--color-font', default='1,1,1')
     parser.add_argument('--color-font-shadow', default='0,0,0')
     parser.add_argument('--color-temperature', default='0.45,0.71,1')
+    parser.add_argument('--extra-margin-factor', type=float, default=1.2)
     parser.add_argument('--history-scale', type=int, default=1)
-    parser.add_argument('--base-temperature', type=int, default=0)
     parser.add_argument('--size-font', type=int, default=8)
     args = parser.parse_args()
 
