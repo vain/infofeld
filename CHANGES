@@ -1,5 +1,13 @@
 Release history for infofeld
 
+next
+  [Fixed]
+  - Parentheses error in temperature graph.
+
+  [Added]
+  - The temperature graph plots the values with an extra margin at the
+    top. This margin can now be customized.
+
 v16.08  2016-08-20
   - Initial release.
   - Scripts included:
