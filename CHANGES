@@ -1,5 +1,10 @@
 Release history for infofeld
 
+next
+  [Added]
+  - Memory graph takes size of ZFS ARC into account (ZFS on Linux only),
+    if that information is available.
+
 v16.09  2016-09-03
   [Fixed]
   - Parentheses error in temperature graph.
