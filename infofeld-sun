@@ -72,12 +72,13 @@ def make_surface(args):
     day = [float(f) for f in args.color_day.split(',')]
 
     # Night and day with smooth transitions.
+    # Not implemented: Twilight should depend on your location.
     pat = cairo.LinearGradient(0, 0, args.w, 0)
     pat.add_color_stop_rgb(0, *night)
-    pat.add_color_stop_rgb(sun['rise'] - 0.03, *night)
-    pat.add_color_stop_rgb(sun['rise'] + 0.03, *day)
-    pat.add_color_stop_rgb(sun['set'] - 0.03, *day)
-    pat.add_color_stop_rgb(sun['set'] + 0.03, *night)
+    pat.add_color_stop_rgb(sun['rise'] - 0.06, *night)
+    pat.add_color_stop_rgb(sun['rise'], *day)
+    pat.add_color_stop_rgb(sun['set'], *day)
+    pat.add_color_stop_rgb(sun['set'] + 0.06, *night)
     pat.add_color_stop_rgb(1, *night)
     cr.rectangle(0, 0, args.w, args.h)
     cr.set_source(pat)
