@@ -1,6 +1,6 @@
 Release history for infofeld
 
-next
+v16.10  2016-10-29
   [Fixed]
   - Sun graph: Twilight is more accurate, i.e. it ends with sun rise and
     begins with sun set. Previously, there was a twilight zone after sun
