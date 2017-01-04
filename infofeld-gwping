@@ -1,0 +1,107 @@
+#!/usr/bin/env python
+
+from infofeldlib import get_history, save_history, write_ff
+
+from argparse import ArgumentParser
+from glob import glob
+from subprocess import PIPE, run
+
+import cairo
+
+
+def ping_gateway():
+    routes = run(['ip', 'route'], stdout=PIPE).stdout
+    for line in routes.decode('UTF-8').splitlines():
+        line = line.strip()
+        fields = line.split()
+        if len(fields) >= 3 and fields[0] == 'default':
+            gateway = fields[2]
+            break
+    else:
+        return 'nogw'
+
+    ping = run(['ping', '-c', '1', '-w', '1', gateway], stdout=PIPE).stdout
+    for line in ping.decode('UTF-8').splitlines():
+        line = line.strip()
+        fields = line.split()
+        if len(fields) >= 4 and fields[0] == 'rtt':
+            return fields[3].split('/')[0]
+
+    return 'loss'
+
+
+def reply_str_to_float(s):
+    if s in ('loss', 'nogw'):
+        return 0
+    else:
+        return float(s)
+
+
+def make_surface(args):
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
+    cr = cairo.Context(surface)
+
+    cr.rectangle(0, 0, args.w, args.h)
+    cr.set_source_rgb(*[float(f) for f in args.color_background.split(',')])
+    cr.fill()
+
+    history = get_history('gwping')
+    history.append(ping_gateway())
+    history = history[-(args.w * args.history_scale):]
+    save_history('gwping', history)
+
+    max_rtt = 0
+    for i in history:
+        max_rtt = max(reply_str_to_float(i), max_rtt)
+
+    if max_rtt == 0:
+        max_rtt = 1
+
+    l = len(history)
+    if l >= 2:
+        # Plot reply times first.
+        cr.save()
+        cr.set_line_width(args.width_line)
+        cr.set_source_rgb(*[float(f) for f in args.color_reply.split(',')])
+        for i, reply_str in enumerate(history):
+            val = reply_str_to_float(reply_str)
+            cr.line_to(
+                (i / (l - 1)) * args.w,
+                (1 - (val / max_rtt)) * args.h,
+            )
+        cr.stroke()
+        cr.restore()
+
+        # Now plot losses and situations without a gateway. Each time,
+        # draw a rectangle which is centered at the time index of that
+        # data point.
+        cr.save()
+        for i, reply_str in enumerate(history):
+            if reply_str in ('loss', 'nogw'):
+                if reply_str == 'loss':
+                    cr.set_source_rgb(*[float(f) for f in args.color_loss.split(',')])
+                else:
+                    cr.set_source_rgb(*[float(f) for f in args.color_nogw.split(',')])
+                cr.rectangle(
+                    (i - 0.5) / (l - 1) * args.w, 0,
+                    0.95 / (l - 1) * args.w, args.h,
+                )
+                cr.fill()
+        cr.restore()
+
+    return surface
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('w', type=int)
+    parser.add_argument('h', type=int)
+    parser.add_argument('--color-background', default='0,0,0.33')
+    parser.add_argument('--color-loss', default='1,0,0')
+    parser.add_argument('--color-nogw', default='1,0.73,0.45')
+    parser.add_argument('--color-reply', default='0.45,0.71,1')
+    parser.add_argument('--history-scale', type=int, default=1)
+    parser.add_argument('--width-line', type=float, default=1.5)
+    args = parser.parse_args()
+
+    write_ff(make_surface(args))

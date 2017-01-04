@@ -1,5 +1,11 @@
 Release history for infofeld
 
+next
+  [Added]
+  - infofeld-gwping was added. It sends ICMP ping requests to your
+    current default gateway and plots their response time (or packet
+    loss).
+
 v16.10  2016-10-29
   [Fixed]
   - Sun graph: Twilight is more accurate, i.e. it ends with sun rise and
