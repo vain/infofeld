@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from infofeldlib import get_history, save_history, write_ff
+from infofeldlib import get_history, save_history, shadowed_text, write_ff
 
 from argparse import ArgumentParser
 from glob import glob
@@ -89,6 +89,9 @@ def make_surface(args):
                 cr.fill()
         cr.restore()
 
+        # Show current maximum.
+        shadowed_text(cr, args, 1, args.size_font, '{:.1f}'.format(max_rtt))
+
     return surface
 
 
@@ -96,11 +99,15 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('w', type=int)
     parser.add_argument('h', type=int)
+    parser.add_argument('--antialias-font', action='store_true')
     parser.add_argument('--color-background', default='0,0,0.33')
+    parser.add_argument('--color-font', default='1,1,1')
+    parser.add_argument('--color-font-shadow', default='0,0,0')
     parser.add_argument('--color-loss', default='1,0,0')
     parser.add_argument('--color-nogw', default='1,0.73,0.45')
     parser.add_argument('--color-reply', default='0.45,0.71,1')
     parser.add_argument('--history-scale', type=int, default=1)
+    parser.add_argument('--size-font', type=int, default=8)
     parser.add_argument('--width-line', type=float, default=1.5)
     args = parser.parse_args()
 
