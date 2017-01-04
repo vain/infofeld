@@ -46,17 +46,17 @@ def make_surface(args):
     if l >= 2:
         f = args.extra_margin_factor
 
-        # Temperature graphs.
+        # Temperature graph.
         cr.save()
-        cr.scale(args.w, args.h)
-        cr.move_to(0, 1)
+        cr.set_line_width(args.width_line)
+        cr.set_source_rgb(*[float(f) for f in args.color_temperature.split(',')])
         for i, temp_str in enumerate(history):
             temp = (int(temp_str) - offset) / ((max_temp - offset) * f)
-            cr.line_to(i / (l - 1), 1 - temp)
-        cr.line_to(1, 1)
-        cr.close_path()
-        cr.set_source_rgb(*[float(f) for f in args.color_temperature.split(',')])
-        cr.fill()
+            cr.line_to(
+                (i / (l - 1)) * args.w,
+                (1 - temp) * args.h,
+            )
+        cr.stroke()
         cr.restore()
 
         # Display current temperature as text.
@@ -80,6 +80,7 @@ if __name__ == '__main__':
     parser.add_argument('--extra-margin-factor', type=float, default=1.2)
     parser.add_argument('--history-scale', type=int, default=1)
     parser.add_argument('--size-font', type=int, default=8)
+    parser.add_argument('--width-line', type=float, default=1.5)
     args = parser.parse_args()
 
     write_ff(make_surface(args))

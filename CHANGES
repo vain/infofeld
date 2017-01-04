@@ -1,6 +1,10 @@
 Release history for infofeld
 
 next
+  [Changed]
+  - infofeld-temperature is now drawn as a simple line graph, because it
+    can show more details this way.
+
   [Added]
   - infofeld-gwping was added. It sends ICMP ping requests to your
     current default gateway and plots their response time (or packet
