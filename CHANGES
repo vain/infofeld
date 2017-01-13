@@ -9,6 +9,8 @@ next
   - infofeld-gwping was added. It sends ICMP ping requests to your
     current default gateway and plots their response time (or packet
     loss).
+  - infofeld-battery was added. It plots the remaining capacity of your
+    battery (if present).
 
 v16.10  2016-10-29
   [Fixed]
