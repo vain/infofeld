@@ -44,12 +44,11 @@ def make_surface(args):
 
     l = len(history)
     if l >= 2:
-        f = args.extra_margin_factor
-
         # Temperature graph.
         cr.save()
         cr.set_line_width(args.width_line)
         cr.set_source_rgb(*[float(f) for f in args.color_temperature.split(',')])
+        f = args.extra_margin_factor
         for i, temp_str in enumerate(history):
             temp = (int(temp_str) - offset) / ((max_temp - offset) * f)
             cr.line_to(
