@@ -4,6 +4,8 @@ next
   [Changed]
   - infofeld-temperature is now drawn as a simple line graph, because it
     can show more details this way.
+  - infofeld-memory is now drawn using floating point values and is thus
+    using "antialiasing". This makes it a tiny bit more accurate.
 
   [Added]
   - infofeld-gwping was added. It sends ICMP ping requests to your

@@ -39,7 +39,7 @@ def make_surface(args):
     pat.add_color_stop_rgb(1, *[float(f) for f in args.color_used_end.split(',')])
     cr.set_source(pat)
 
-    cr.rectangle(0, 0, int((total - avail) / total * args.w), args.h)
+    cr.rectangle(0, 0, (total - avail) / total * args.w, args.h)
     cr.fill()
 
     return surface
