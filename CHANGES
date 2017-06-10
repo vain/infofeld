@@ -1,6 +1,6 @@
 Release history for infofeld
 
-next
+v17.06  2017-06-10
   [Changed]
   - infofeld-temperature is now drawn as a simple line graph, because it
     can show more details this way.
