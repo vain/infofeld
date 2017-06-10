@@ -10,13 +10,15 @@ import cairo
 
 def stat_snapshot():
     for i in glob('/sys/class/power_supply/BAT?'):
-        with open(i + '/capacity') as fp:
-            capa = fp.read().strip()
+        with open(i + '/charge_now') as fp:
+            charge_now = fp.read().strip()
+        with open(i + '/charge_full_design') as fp:
+            charge_full_design = fp.read().strip()
         with open(i + '/status') as fp:
             status = fp.read().strip()
-        return capa, status
+        return charge_now, charge_full_design, status
     else:
-        return '0', '<no-battery>'
+        return '0', '1', '<no-battery>'
 
 
 def make_surface(args):
@@ -34,10 +36,12 @@ def make_surface(args):
     pat.add_color_stop_rgb(1, *[float(f) for f in args.color_capacity_full.split(',')])
     cr.set_source(pat)
 
-    capacity, status = stat_snapshot()
-    capacity = int(capacity)
+    charge_now, charge_full_design, status = stat_snapshot()
+    charge_now = int(charge_now)
+    charge_full_design = int(charge_full_design)
+    charge_rel = charge_now / charge_full_design
 
-    cr.rectangle(0, 0, capacity / 100 * args.w, args.h)
+    cr.rectangle(0, 0, charge_rel * args.w, args.h)
     cr.fill()
 
     if status != 'Discharging':
@@ -45,7 +49,7 @@ def make_surface(args):
         cr.set_source_rgba(0, 0, 0, float(args.opacity_not_discharging))
         cr.fill()
 
-    shadowed_text(cr, args, 1, args.size_font, '{}%'.format(capacity))
+    shadowed_text(cr, args, 1, args.size_font, '{:.0f}%'.format(charge_rel * 100))
 
     return surface
 
