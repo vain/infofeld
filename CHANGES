@@ -1,5 +1,11 @@
 Release history for infofeld
 
+next
+  [LICENSING]
+  - The project has been relicensed under the MIT license (more
+    precisely called "Expat License", but everyone calls it "MIT
+    license" these days).
+
 v17.07  2017-07-02
   [Changed]
   - Battery capacity is now show relative to design values. Older
