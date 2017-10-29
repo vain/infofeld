@@ -38,12 +38,8 @@ def sun_info(args):
              sin(0.01787 * l.tm_yday - 0.168))
 
     local_delta = tzoff / (-60) - (args.lon / 15)
-
-    WOZ = 12 - diff
-    MOZ = WOZ + ZGdiff
-    local_rise = MOZ + local_delta
-
-    local_set = local_rise + 2 * diff
+    local_rise = 12 - diff - ZGdiff + local_delta
+    local_set = 12 + diff - ZGdiff + local_delta
     local_noon = local_rise + diff
 
     sun['rise'] = local_rise / 24
