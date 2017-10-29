@@ -5,6 +5,10 @@ next
   - Fix sign error in infofeld-sun. Sun set and sun rise have been quite
     off during some periods of the year.
 
+  [Changed]
+  - infofeld-sun now draws a little circular "clock". This is much
+    easier to comprehend than the previous linear view.
+
 v17.09  2017-09-16
   [LICENSING]
   - The project has been relicensed under the MIT license (more

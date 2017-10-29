@@ -61,64 +61,66 @@ def make_surface(args):
 
     sun = sun_info(args)
 
-    # We assume that "sensible" time zones are in effect. That is, night
-    # time does not begin after 0:00.
+    center = args.h / 2
+    radius = center
 
-    night = [float(f) for f in args.color_night.split(',')]
-    day = [float(f) for f in args.color_day.split(',')]
-
-    # Night and day with smooth transitions.
-    # Not implemented: Twilight should depend on your location.
-    pat = cairo.LinearGradient(0, 0, args.w, 0)
-    pat.add_color_stop_rgb(0, *night)
-    pat.add_color_stop_rgb(sun['rise'] - 0.06, *night)
-    pat.add_color_stop_rgb(sun['rise'], *day)
-    pat.add_color_stop_rgb(sun['set'], *day)
-    pat.add_color_stop_rgb(sun['set'] + 0.06, *night)
-    pat.add_color_stop_rgb(1, *night)
+    # Clear background.
     cr.rectangle(0, 0, args.w, args.h)
-    cr.set_source(pat)
+    cr.set_source_rgb(*[float(f) for f in args.color_background.split(',')])
     cr.fill()
 
-    # Grid.
+    # Two arcs: One for night, one for day. Note that we have to begin
+    # drawing at the circle's center to get an actual "pizza" segment.
+    cr.move_to(center, center)
+    cr.arc(center, center, radius,
+        -sun['set'] * 2 * pi + pi / 2,
+        sun['rise'] * 2 * pi + pi / 2,
+    )
+    cr.set_source_rgb(*[float(f) for f in args.color_night.split(',')])
+    cr.fill()
+
+    cr.move_to(center, center)
+    cr.arc(center, center, radius,
+        sun['rise'] * 2 * pi + pi / 2,
+        sun['set'] * 2 * pi + pi / 2,
+    )
+    cr.set_source_rgb(*[float(f) for f in args.color_day.split(',')])
+    cr.fill()
+
+    # Indicate noon.
     cr.save()
-    cr.set_line_width(args.width_grid)
-    cr.set_dash([args.dash_grid], 0)
-    cr.set_source_rgb(*[float(f) for f in args.color_grid.split(',')])
-    for i in range(args.interval_grid, 24, args.interval_grid):
-        cr.move_to(int(i / 24 * args.w) - 0.5, 0)
-        cr.line_to(int(i / 24 * args.w) - 0.5, args.h)
-        cr.stroke()
+    cr.move_to(center, center)
+    cr.line_to(
+        center + radius * sin(-sun['noon'] * 2 * pi),
+        center + radius * cos(-sun['noon'] * 2 * pi),
+    )
+    cr.set_source_rgb(*[float(f) for f in args.color_noon.split(',')])
+    cr.set_line_width(args.width_noon)
+    cr.stroke()
     cr.restore()
 
-    # Indicators.
-    cr.set_line_width(args.width_noon)
-    cr.set_source_rgb(*[float(f) for f in args.color_noon.split(',')])
-    cr.move_to(int(sun['noon'] * args.w) - 0.5, 0)
-    cr.line_to(int(sun['noon'] * args.w) - 0.5, args.h)
-    cr.stroke()
-
-    cr.set_line_width(args.width_now)
+    # Indicate current sun position.
+    cr.save()
+    cr.move_to(
+        center + 0.25 * radius * sin(-sun['current'] * 2 * pi),
+        center + 0.25 * radius * cos(-sun['current'] * 2 * pi),
+    )
+    cr.line_to(
+        center + radius * sin(-sun['current'] * 2 * pi),
+        center + radius * cos(-sun['current'] * 2 * pi),
+    )
     cr.set_source_rgb(*[float(f) for f in args.color_now.split(',')])
-    cr.move_to(sun['current'] * args.w, 0)
-    cr.line_to(sun['current'] * args.w, args.h)
+    cr.set_line_width(args.width_now)
     cr.stroke()
+    cr.restore()
 
-    # Text labels.
-    # Note that these times are not 100% correct due to the simple
-    # calculations we do above. They should be about +/- 10 minutes
-    # accurate, though. This is more than good enough if you only want
-    # to get an idea of "when it'll get dark outside".
+    # Text labels. Align sun rise left, sun set right.
     l = float_to_time(sun['rise'])
-    shadowed_text(cr, args,
-                  int(sun['rise'] * args.w) + 1, args.size_font,
-                  l)
+    shadowed_text(cr, args, 2 * radius + 2, args.size_font, l)
 
     l = float_to_time(sun['set'])
     _, _, tw, _, _, _ = cr.text_extents(l)
-    shadowed_text(cr, args,
-                  int(sun['set'] * args.w - tw), args.h - 2,
-                  l)
+    shadowed_text(cr, args, args.w - tw, args.h - 2, l)
 
     return surface
 
@@ -128,21 +130,18 @@ if __name__ == '__main__':
     parser.add_argument('w', type=int)
     parser.add_argument('h', type=int)
     parser.add_argument('--antialias-font', action='store_true')
-    parser.add_argument('--color-day', default='0.45,0.71,1')
+    parser.add_argument('--color-background', default='0,0,0.33')
+    parser.add_argument('--color-day', default='1,0.73,0.45')
     parser.add_argument('--color-font', default='1,1,1')
     parser.add_argument('--color-font-shadow', default='0,0,0')
-    parser.add_argument('--color-grid', default='0.3,0.3,0.3')
-    parser.add_argument('--color-night', default='0,0,0.33')
-    parser.add_argument('--color-noon', default='0.45,0.82,1')
-    parser.add_argument('--color-now', default='1,0,0')
-    parser.add_argument('--dash-grid', type=int, default=1)
-    parser.add_argument('--interval-grid', type=int, default=3)
+    parser.add_argument('--color-night', default='0.45,0.71,1')
+    parser.add_argument('--color-noon', default='0.3,0.3,0.3')
+    parser.add_argument('--color-now', default='0,0,0')
     parser.add_argument('--lat', type=float, default=50)
     parser.add_argument('--lon', type=float, default=8)
     parser.add_argument('--size-font', type=int, default=8)
-    parser.add_argument('--width-grid', type=float, default=1)
-    parser.add_argument('--width-noon', type=float, default=1)
-    parser.add_argument('--width-now', type=float, default=2)
+    parser.add_argument('--width-noon', type=float, default=0.25)
+    parser.add_argument('--width-now', type=float, default=1)
     args = parser.parse_args()
 
     write_ff(make_surface(args))
