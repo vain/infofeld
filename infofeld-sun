@@ -27,6 +27,9 @@ def sun_info(args):
     # http://lexikon.astronomie.info/zeitgleichung/
     # (No code from that site has been used, just the mathematical
     # formulas.)
+    #
+    # Please note that these approximations don't work well above 60
+    # degrees latitude, nor below -60 degrees.
 
     B = args.lat * DEG_TO_RAD
     decl = 0.4095 * sin(0.016906 * (l.tm_yday - 80.086))
