@@ -119,9 +119,10 @@ def make_surface(args):
     cr.stroke()
     cr.restore()
 
-    # Text labels. Align sun rise left, sun set right.
+    # Text labels.
     l = float_to_time(sun['rise'])
-    shadowed_text(cr, args, 2 * radius + 2, args.size_font, l)
+    _, _, tw, _, _, _ = cr.text_extents(l)
+    shadowed_text(cr, args, args.w - tw, args.size_font, l)
 
     l = float_to_time(sun['set'])
     _, _, tw, _, _, _ = cr.text_extents(l)
