@@ -104,15 +104,17 @@ def make_surface(args):
 
     # Indicate current sun position.
     cr.save()
-    cr.move_to(
-        center + 0.25 * radius * sin(-sun['current'] * 2 * pi),
-        center + 0.25 * radius * cos(-sun['current'] * 2 * pi),
-    )
-    cr.line_to(
-        center + radius * sin(-sun['current'] * 2 * pi),
-        center + radius * cos(-sun['current'] * 2 * pi),
+    dot_radius = 0.15 * radius
+    cr.arc(
+        center + (0.95 * radius - dot_radius) * sin(-sun['current'] * 2 * pi),
+        center + (0.95 * radius - dot_radius) * cos(-sun['current'] * 2 * pi),
+        dot_radius,
+        0,
+        2 * pi,
     )
     cr.set_source_rgb(*[float(f) for f in args.color_now.split(',')])
+    cr.fill_preserve()
+    cr.set_source_rgb(*[float(f) for f in args.color_background.split(',')])
     cr.set_line_width(args.width_now)
     cr.stroke()
     cr.restore()
@@ -139,12 +141,12 @@ if __name__ == '__main__':
     parser.add_argument('--color-font-shadow', default='0,0,0')
     parser.add_argument('--color-night', default='0.45,0.71,1')
     parser.add_argument('--color-noon', default='0.3,0.3,0.3')
-    parser.add_argument('--color-now', default='0,0,0')
+    parser.add_argument('--color-now', default='1,0,0')
     parser.add_argument('--lat', type=float, default=50)
     parser.add_argument('--lon', type=float, default=8)
     parser.add_argument('--size-font', type=int, default=8)
     parser.add_argument('--width-noon', type=float, default=0.25)
-    parser.add_argument('--width-now', type=float, default=1)
+    parser.add_argument('--width-now', type=float, default=0.75)
     args = parser.parse_args()
 
     write_ff(make_surface(args))
