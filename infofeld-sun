@@ -5,6 +5,7 @@ from infofeldlib import shadowed_text, write_ff
 from argparse import ArgumentParser
 from datetime import datetime
 from math import acos, cos, sin, pi
+from sys import exit, stderr
 
 import cairo
 
@@ -61,29 +62,35 @@ def float_to_time(f):
 def make_surface(args):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
     cr = cairo.Context(surface)
+    radius = args.h / 2
 
     sun = sun_info(args)
-
-    center = args.h / 2
-    radius = center
 
     # Clear background.
     cr.rectangle(0, 0, args.w, args.h)
     cr.set_source_rgb(*[float(f) for f in args.color_background.split(',')])
     cr.fill()
 
+    # Zoom and auto-pan.
+    cr.save()
+    if 0.25 < sun['current'] < 0.75:
+        cr.translate(args.zoom * radius, args.zoom * radius)
+    else:
+        cr.translate(args.zoom * radius, 2 * radius - args.zoom * radius)
+    cr.scale(args.zoom, args.zoom)
+
     # Two arcs: One for night, one for day. Note that we have to begin
     # drawing at the circle's center to get an actual "pizza" segment.
-    cr.move_to(center, center)
-    cr.arc(center, center, radius,
+    cr.move_to(0, 0)
+    cr.arc(0, 0, radius,
         -sun['set'] * 2 * pi + pi / 2,
         sun['rise'] * 2 * pi + pi / 2,
     )
     cr.set_source_rgb(*[float(f) for f in args.color_night.split(',')])
     cr.fill()
 
-    cr.move_to(center, center)
-    cr.arc(center, center, radius,
+    cr.move_to(0, 0)
+    cr.arc(0, 0, radius,
         sun['rise'] * 2 * pi + pi / 2,
         sun['set'] * 2 * pi + pi / 2,
     )
@@ -92,13 +99,13 @@ def make_surface(args):
 
     # Indicate noon.
     cr.save()
-    cr.move_to(center, center)
+    cr.move_to(0, 0)
     cr.line_to(
-        center + radius * sin(-sun['noon'] * 2 * pi),
-        center + radius * cos(-sun['noon'] * 2 * pi),
+        radius * sin(-sun['noon'] * 2 * pi),
+        radius * cos(-sun['noon'] * 2 * pi),
     )
     cr.set_source_rgb(*[float(f) for f in args.color_noon.split(',')])
-    cr.set_line_width(args.width_noon)
+    cr.set_line_width(args.width_noon / args.zoom)
     cr.stroke()
     cr.restore()
 
@@ -106,8 +113,8 @@ def make_surface(args):
     cr.save()
     dot_radius = 0.15 * radius
     cr.arc(
-        center + (0.95 * radius - dot_radius) * sin(-sun['current'] * 2 * pi),
-        center + (0.95 * radius - dot_radius) * cos(-sun['current'] * 2 * pi),
+        (0.95 * radius - dot_radius) * sin(-sun['current'] * 2 * pi),
+        (0.95 * radius - dot_radius) * cos(-sun['current'] * 2 * pi),
         dot_radius,
         0,
         2 * pi,
@@ -115,8 +122,11 @@ def make_surface(args):
     cr.set_source_rgb(*[float(f) for f in args.color_now.split(',')])
     cr.fill_preserve()
     cr.set_source_rgb(*[float(f) for f in args.color_background.split(',')])
-    cr.set_line_width(args.width_now)
+    cr.set_line_width(args.width_now / args.zoom)
     cr.stroke()
+    cr.restore()
+
+    # Revert zoom/pan.
     cr.restore()
 
     # Text labels.
@@ -148,6 +158,11 @@ if __name__ == '__main__':
     parser.add_argument('--size-font', type=int, default=8)
     parser.add_argument('--width-noon', type=float, default=0.25)
     parser.add_argument('--width-now', type=float, default=0.75)
+    parser.add_argument('--zoom', type=float, default=1.5)
     args = parser.parse_args()
+
+    if args.zoom < 1 or args.zoom > 2:
+        print('Error: --zoom must be >= 1 and <= 2', file=stderr)
+        exit(1)
 
     write_ff(make_surface(args))
