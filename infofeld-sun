@@ -130,13 +130,17 @@ def make_surface(args):
     cr.restore()
 
     # Text labels.
+    # (It's important to set font size before calling text_extents().)
+    cr.set_font_size(args.size_font)
+    margin = 2
+
     l = float_to_time(sun['rise'])
     _, _, tw, _, _, _ = cr.text_extents(l)
-    shadowed_text(cr, args, args.w - tw, args.size_font, l)
+    shadowed_text(cr, args, args.w - tw - margin - 1, args.size_font, l)
 
     l = float_to_time(sun['set'])
     _, _, tw, _, _, _ = cr.text_extents(l)
-    shadowed_text(cr, args, args.w - tw, args.h - 2, l)
+    shadowed_text(cr, args, args.w - tw - margin - 1, args.h - margin, l)
 
     return surface
 
