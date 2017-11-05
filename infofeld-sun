@@ -56,7 +56,7 @@ def sun_info(args):
 def float_to_time(f):
     f *= 24
     h = int(f)
-    return '{}:{:02d}'.format(h, int((f - h) * 60))
+    return '{}:{:02d}'.format(h, round((f - h) * 60))
 
 
 def make_surface(args):

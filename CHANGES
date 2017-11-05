@@ -4,6 +4,8 @@ next
   [Fixed]
   - Fix sign error in infofeld-sun. Sun set and sun rise have been quite
     off during some periods of the year.
+  - infofeld-sun: We now use round() instead of a simple int() to
+    display sun set and sun rise. This should be slightly more accurate.
 
   [Changed]
   - infofeld-sun now draws a little circular "clock". This is much
