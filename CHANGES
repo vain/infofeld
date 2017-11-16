@@ -1,6 +1,6 @@
 Release history for infofeld
 
-next
+v17.11  2017-11-16
   [Fixed]
   - Fix sign error in infofeld-sun. Sun set and sun rise have been quite
     off during some periods of the year.
