@@ -8,6 +8,10 @@ next
   [Changed]
   - Memory graph no longer accounts for ZFS ARC size.
 
+  [Added]
+  - Memory graph now draws a label showing the amount of available
+    memory.
+
 v17.11  2017-11-16
   [Fixed]
   - Fix sign error in infofeld-sun. Sun set and sun rise have been quite
