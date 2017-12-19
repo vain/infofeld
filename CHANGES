@@ -5,6 +5,9 @@ next
   - infofeld-sun: Fix rounding errors. Might have shown "7:60" instead
     of "8:00".
 
+  [Changed]
+  - Memory graph no longer accounts for ZFS ARC size.
+
 v17.11  2017-11-16
   [Fixed]
   - Fix sign error in infofeld-sun. Sun set and sun rise have been quite

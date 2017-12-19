@@ -25,15 +25,6 @@ def make_surface(args):
         elif tokens[0] == 'MemAvailable:':
             avail = int(tokens[1])
 
-    try:
-        with open('/proc/spl/kstat/zfs/arcstats') as fp:
-            for i in fp.readlines():
-                tokens = i.strip().split()
-                if tokens[0] == 'size':
-                    avail += int(tokens[2]) / 1024
-    except FileNotFoundError:
-        pass
-
     pat = cairo.LinearGradient(0, 0, args.w, 0)
     pat.add_color_stop_rgb(0, *[float(f) for f in args.color_used_begin.split(',')])
     pat.add_color_stop_rgb(1, *[float(f) for f in args.color_used_end.split(',')])
