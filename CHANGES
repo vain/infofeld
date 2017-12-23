@@ -1,6 +1,6 @@
 Release history for infofeld
 
-next
+v17.12  2017-12-23
   [Fixed]
   - infofeld-sun: Fix rounding errors. Might have shown "7:60" instead
     of "8:00".
