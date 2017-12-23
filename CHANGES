@@ -6,7 +6,7 @@ next
     of "8:00".
 
   [Changed]
-  - Memory graph no longer accounts for ZFS ARC size.
+  - Memory graph no longer tries to account for ZFS ARC size.
 
   [Added]
   - Memory graph now draws a label showing the amount of available
