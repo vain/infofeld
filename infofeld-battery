@@ -4,6 +4,7 @@ from infofeldlib import shadowed_text, write_ff
 
 from argparse import ArgumentParser
 from glob import glob
+from sys import exit
 
 import cairo
 
@@ -18,10 +19,14 @@ def stat_snapshot():
             status = fp.read().strip()
         return charge_now, charge_full_design, status
     else:
-        return '0', '1', '<no-battery>'
+        return None, None, None
 
 
 def make_surface(args):
+    charge_now, charge_full_design, status = stat_snapshot()
+    if status == None:
+        return None
+
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
     cr = cairo.Context(surface)
 
@@ -36,7 +41,6 @@ def make_surface(args):
     pat.add_color_stop_rgb(1, *[float(f) for f in args.color_capacity_full.split(',')])
     cr.set_source(pat)
 
-    charge_now, charge_full_design, status = stat_snapshot()
     charge_now = int(charge_now)
     charge_full_design = int(charge_full_design)
     charge_rel = charge_now / charge_full_design
@@ -70,4 +74,8 @@ if __name__ == '__main__':
     parser.add_argument('--width-line', type=float, default=1.5)
     args = parser.parse_args()
 
-    write_ff(make_surface(args))
+    sfc = make_surface(args)
+    if sfc is not None:
+        write_ff(make_surface(args))
+    else:
+        exit(1)

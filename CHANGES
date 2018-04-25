@@ -1,5 +1,10 @@
 Release history for infofeld
 
+next
+  [Changed]
+  - infofeld-battery now exits with an exit code other than 0, if there
+    is no battery in the system.
+
 v17.12  2017-12-23
   [Fixed]
   - infofeld-sun: Fix rounding errors. Might have shown "7:60" instead
