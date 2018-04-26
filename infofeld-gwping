@@ -90,7 +90,7 @@ def make_surface(args):
         cr.restore()
 
         # Show current maximum.
-        shadowed_text(cr, args, 1, args.size_font, '{:.1f}'.format(max_rtt))
+        shadowed_text(cr, args, 1, args.size_font, '{:.1f} ms'.format(max_rtt))
 
     return surface
 

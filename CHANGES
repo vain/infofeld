@@ -4,6 +4,7 @@ next
   [Changed]
   - infofeld-battery now exits with an exit code other than 0, if there
     is no battery in the system.
+  - All graphs now show units.
 
 v17.12  2017-12-23
   [Fixed]

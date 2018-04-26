@@ -61,7 +61,7 @@ def make_surface(args):
         # Display current temperature as text.
         shadowed_text(cr, args,
                       1, args.size_font,
-                      str(int(int(history[-1]) / 1000)))
+                      '{}°C'.format(int(int(history[-1]) / 1000)))
 
     return surface
 
