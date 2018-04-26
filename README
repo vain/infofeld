@@ -18,6 +18,7 @@ Dependencies:
     - Python 3 Cairo bindings (package python-cairo in Arch Linux)
     - Linux procfs and sysfs
     - farbfeld tools (png2ff)
+    - wlinfo (https://github.com/vain/wlinfo) for the WiFi graph
 
 Clone this repo and make it available in your $PATH. You will most
 likely not call any of these scripts interactively but from a wrapper

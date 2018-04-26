@@ -7,7 +7,8 @@ next
   - All graphs now show units.
 
   [Added]
-  - infofeld-wifi: Show graph of wifi signal quality. (Requires "iw".)
+  - infofeld-wifi: Show graph of wifi signal quality. Requires wlinfo:
+    https://github.com/vain/wlinfo
 
 v17.12  2017-12-23
   [Fixed]

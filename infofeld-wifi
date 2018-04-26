@@ -11,15 +11,13 @@ import cairo
 
 
 def get_signal(iface):
-    # XXX Rewrite to use "wlinfo"
-    ret = run(['iw', 'dev', iface, 'link'], stdout=PIPE)
+    ret = run(['wlinfo', iface], stdout=PIPE)
     if ret.returncode != 0:
         return None
 
     for i in ret.stdout.decode('UTF-8').splitlines():
-        i = i.strip()
-        if i.startswith('signal: '):
-            tokens = i.split()
+        tokens = i.strip().split()
+        if len(tokens) >= 2 and tokens[0] == 'signal':
             return tokens[1]
 
     return None
