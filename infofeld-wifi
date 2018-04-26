@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+
+from infofeldlib import get_history, save_history, shadowed_text, write_ff
+
+from argparse import ArgumentParser
+from glob import glob
+from subprocess import PIPE, run
+from sys import exit
+
+import cairo
+
+
+def get_signal(iface):
+    # XXX Rewrite to use "wlinfo"
+    ret = run(['iw', 'dev', iface, 'link'], stdout=PIPE)
+    if ret.returncode != 0:
+        return None
+
+    for i in ret.stdout.decode('UTF-8').splitlines():
+        i = i.strip()
+        if i.startswith('signal: '):
+            tokens = i.split()
+            return tokens[1]
+
+    return None
+
+
+def make_surface(args):
+    signal = get_signal(args.interface)
+    if signal is None:
+        return None
+
+    history = get_history('wifi-' + args.interface)
+    history.append(signal)
+    history = history[-(args.w * args.history_scale):]
+    save_history('wifi-' + args.interface, history)
+
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
+    cr = cairo.Context(surface)
+
+    cr.rectangle(0, 0, args.w, args.h)
+    cr.set_source_rgb(*[float(f) for f in args.color_background.split(',')])
+    cr.fill()
+
+    min_sig = args.base_signal
+    max_sig = args.best_signal
+    for i in history:
+        min_sig = min(int(i), min_sig)
+        max_sig = max(int(i), max_sig)
+
+    l = len(history)
+    if l >= 2:
+        cr.save()
+        cr.set_line_width(args.width_line)
+        cr.set_source_rgb(*[float(f) for f in args.color_signal.split(',')])
+        for i, raw_val in enumerate(history):
+            val01 = -(int(raw_val) - min_sig) / (min_sig - max_sig)
+            cr.line_to(
+                (i / (l - 1)) * args.w,
+                (1 - val01) * args.h,
+            )
+        cr.stroke()
+        cr.restore()
+
+        shadowed_text(cr, args, 1, args.size_font, '{} dBm'.format(int(history[-1])))
+
+    return surface
+
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument('w', type=int)
+    parser.add_argument('h', type=int)
+    parser.add_argument('--antialias-font', action='store_true')
+    parser.add_argument('--base-signal', type=int, default=-80)
+    parser.add_argument('--best-signal', type=int, default=-40)
+    parser.add_argument('--color-background', default='0,0,0.33')
+    parser.add_argument('--color-font', default='1,1,1')
+    parser.add_argument('--color-font-shadow', default='0,0,0')
+    parser.add_argument('--color-signal', default='0.45,0.71,1')
+    parser.add_argument('--history-scale', type=int, default=1)
+    parser.add_argument('--interface', default='wl')
+    parser.add_argument('--size-font', type=int, default=8)
+    parser.add_argument('--width-line', type=float, default=1.5)
+    args = parser.parse_args()
+
+    sfc = make_surface(args)
+    if sfc is None:
+        exit(1)
+    else:
+        write_ff(sfc)
