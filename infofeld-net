@@ -5,33 +5,44 @@ from infofeldlib import get_history, save_history, shadowed_text, write_ff
 from argparse import ArgumentParser
 from datetime import datetime
 from glob import glob
+from os.path import basename
 
 import cairo
 
 
-def stat_snapshot():
+def stat_snapshot(interface):
     rx_bytes = 0
     tx_bytes = 0
+    iface_found = False
 
     for i in glob('/sys/class/net/*'):
-        # 1 = ARPHRD_ETHER
-        # https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/include/uapi/linux/if_arp.h?id=refs/tags/v3.19.3#n67
-        with open(i + '/type') as fp:
-            if fp.read().strip() != '1':
-                continue
+        if interface is None or basename(i) == interface:
+            # Filter for ethernet-ish interfaces if we are not limited
+            # to one particular interface.
+            if interface is None:
+                # 1 = ARPHRD_ETHER
+                # https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/include/uapi/linux/if_arp.h?id=refs/tags/v3.19.3#n67
+                with open(i + '/type') as fp:
+                    if fp.read().strip() != '1':
+                        continue
 
-        # First bit set = interface up
-        # https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/include/uapi/linux/if.h?id=refs/tags/v3.19.3#n71
-        with open(i + '/flags') as fp:
-            if not int(fp.read().strip(), 16) & 1:
-                continue
+            # First bit set = interface up
+            # https://git.kernel.org/cgit/linux/kernel/git/stable/linux-stable.git/tree/include/uapi/linux/if.h?id=refs/tags/v3.19.3#n71
+            with open(i + '/flags') as fp:
+                if not int(fp.read().strip(), 16) & 1:
+                    continue
 
-        with open(i + '/statistics/rx_bytes') as fp:
-            rx_bytes += int(fp.read().strip())
-        with open(i + '/statistics/tx_bytes') as fp:
-            tx_bytes += int(fp.read().strip())
+            iface_found = True
 
-    return '{} {} {}'.format(datetime.now().strftime('%s.%f'), rx_bytes, tx_bytes)
+            with open(i + '/statistics/rx_bytes') as fp:
+                rx_bytes += int(fp.read().strip())
+            with open(i + '/statistics/tx_bytes') as fp:
+                tx_bytes += int(fp.read().strip())
+
+    if iface_found:
+        return '{} {} {}'.format(datetime.now().strftime('%s.%f'), rx_bytes, tx_bytes)
+    else:
+        return None
 
 
 def get_scaled_deltas(net_class, new, old):
@@ -82,6 +93,10 @@ def get_net_class(history):
 
 
 def make_surface(args):
+    stats_now = stat_snapshot(args.interface)
+    if stats_now is None:
+        return None
+
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, args.w, args.h)
     cr = cairo.Context(surface)
 
@@ -89,10 +104,10 @@ def make_surface(args):
     cr.set_source_rgb(*[float(f) for f in args.color_background.split(',')])
     cr.fill()
 
-    history = get_history('net')
-    history.append(stat_snapshot())
+    history = get_history('net-' + (args.interface or 'all'))
+    history.append(stats_now)
     history = history[-int(args.w / 2 * args.history_scale):]
-    save_history('net', history)
+    save_history('net-' + (args.interface or 'all'), history)
     hist_tok = [[float(j) for j in i.split()] for i in history]
 
     l = len(history)
@@ -165,8 +180,13 @@ if __name__ == '__main__':
     parser.add_argument('--color-up', default='1,0.73,0.45')
     parser.add_argument('--dash-grid', type=int, default=1)
     parser.add_argument('--history-scale', type=int, default=1)
+    parser.add_argument('--interface', type=str, default=None)
     parser.add_argument('--size-font', type=int, default=8)
     parser.add_argument('--width-grid', type=float, default=1)
     args = parser.parse_args()
 
-    write_ff(make_surface(args))
+    sfc = make_surface(args)
+    if sfc is None:
+        exit(1)
+    else:
+        write_ff(sfc)

@@ -9,6 +9,7 @@ next
   [Added]
   - infofeld-wifi: Show graph of wifi signal quality. Requires wlinfo:
     https://github.com/vain/wlinfo
+  - infofeld-net can now be limited to just one interface.
 
 v17.12  2017-12-23
   [Fixed]
