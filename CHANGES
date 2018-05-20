@@ -1,6 +1,6 @@
 Release history for infofeld
 
-next
+v18.05  2018-05-20
   [Changed]
   - infofeld-battery now exits with an exit code other than 0, if there
     is no battery in the system.
